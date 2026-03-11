@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { supabase } from '../supabase';
 import { Painting } from '../types';
 
 export default function PaintingDetail() {
@@ -19,15 +18,21 @@ export default function PaintingDetail() {
 
   useEffect(() => {
     async function fetchPainting() {
-      if (!db || !id) {
+      if (!supabase || !id) {
         setLoading(false);
         return;
       }
       try {
-        const docRef = doc(db, 'paintings', id);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setPainting({ id: docSnap.id, ...docSnap.data() } as Painting);
+        const { data, error } = await supabase
+          .from('paintings')
+          .select('*')
+          .eq('id', id)
+          .single();
+          
+        if (error) throw error;
+        
+        if (data) {
+          setPainting(data as Painting);
         } else {
           console.log("No such document!");
         }

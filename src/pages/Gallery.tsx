@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '../firebase';
+import { supabase } from '../supabase';
 import { Painting } from '../types';
 
 export default function Gallery() {
@@ -13,18 +12,21 @@ export default function Gallery() {
 
   useEffect(() => {
     async function fetchPaintings() {
-      if (!db) {
+      if (!supabase) {
         setLoading(false);
         return;
       }
       try {
-        const q = query(collection(db, 'paintings'), orderBy('createdAt', 'desc'));
-        const querySnapshot = await getDocs(q);
-        const data = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Painting[];
-        setPaintings(data);
+        const { data, error } = await supabase
+          .from('paintings')
+          .select('*')
+          .order('createdAt', { ascending: false });
+          
+        if (error) throw error;
+        
+        if (data) {
+          setPaintings(data as Painting[]);
+        }
       } catch (error) {
         console.error("Error fetching paintings:", error);
       } finally {
@@ -81,7 +83,7 @@ export default function Gallery() {
       ) : filteredPaintings.length === 0 ? (
         <div className="text-center text-stone-500 py-20">
           <p className="text-xl font-serif">Aucune œuvre trouvée.</p>
-          {!db && <p className="mt-4 text-sm">Veuillez configurer Firebase pour voir les œuvres.</p>}
+          {!supabase && <p className="mt-4 text-sm">Veuillez configurer Supabase pour voir les œuvres.</p>}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">

@@ -9,5 +9,5 @@ export interface Painting {
   description: string;
   price?: number;
   status: 'disponible' | 'réservé';
-  createdAt: any; // Firestore Timestamp
+  createdAt: string; // Supabase timestamp
 }

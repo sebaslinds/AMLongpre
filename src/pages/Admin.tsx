@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../firebase';
+import { supabase } from '../supabase';
 import { Upload } from 'lucide-react';
 
 export default function Admin() {
@@ -56,8 +54,8 @@ export default function Admin() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!imageFile || !db || !storage) {
-      setError('Veuillez sélectionner une image et vérifier la configuration Firebase.');
+    if (!imageFile || !supabase) {
+      setError('Veuillez sélectionner une image et vérifier la configuration Supabase.');
       return;
     }
 
@@ -66,24 +64,37 @@ export default function Admin() {
     setSuccess(false);
 
     try {
-      // 1. Upload image to Firebase Storage
-      const storageRef = ref(storage, `paintings/${Date.now()}_${imageFile.name}`);
-      const snapshot = await uploadBytes(storageRef, imageFile);
-      const imageURL = await getDownloadURL(snapshot.ref);
+      // 1. Upload image to Supabase Storage
+      const fileName = `${Date.now()}_${imageFile.name}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('paintings')
+        .upload(fileName, imageFile);
 
-      // 2. Save data to Firestore
-      await addDoc(collection(db, 'paintings'), {
-        title: formData.title,
-        imageURL,
-        width: Number(formData.width),
-        height: Number(formData.height),
-        technique: formData.technique,
-        year: Number(formData.year),
-        description: formData.description,
-        price: formData.price ? Number(formData.price) : null,
-        status: formData.status,
-        createdAt: serverTimestamp(),
-      });
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('paintings')
+        .getPublicUrl(fileName);
+
+      // 2. Save data to Supabase Database
+      const { error: insertError } = await supabase
+        .from('paintings')
+        .insert([
+          {
+            title: formData.title,
+            imageURL: publicUrl,
+            width: Number(formData.width),
+            height: Number(formData.height),
+            technique: formData.technique,
+            year: Number(formData.year),
+            description: formData.description,
+            price: formData.price ? Number(formData.price) : null,
+            status: formData.status,
+            createdAt: new Date().toISOString(),
+          }
+        ]);
+
+      if (insertError) throw insertError;
 
       setSuccess(true);
       // Reset form
