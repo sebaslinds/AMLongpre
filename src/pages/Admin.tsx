@@ -27,7 +27,7 @@ export default function Admin() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'admin';
+    const adminPassword = process.env.GalerieAML || import.meta.env.VITE_ADMIN_PASSWORD || 'admin';
     if (password === adminPassword) {
       setIsAuthenticated(true);
       setError('');
