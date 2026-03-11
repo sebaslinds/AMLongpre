@@ -13,6 +13,7 @@ const navLinks = [
   { name: 'Accueil', path: '/' },
   { name: 'Galerie', path: '/gallery' },
   { name: 'À propos', path: '/about' },
+  { name: 'Admin', path: '/admin' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

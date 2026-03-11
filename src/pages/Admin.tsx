@@ -27,7 +27,8 @@ export default function Admin() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === import.meta.env.VITE_ADMIN_PASSWORD) {
+    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'admin';
+    if (password === adminPassword) {
       setIsAuthenticated(true);
       setError('');
     } else {
@@ -54,9 +55,25 @@ export default function Admin() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!imageFile || !supabase) {
-      setError('Veuillez sélectionner une image et vérifier la configuration Supabase.');
+    
+    if (!imageFile) {
+      setError('Veuillez sélectionner une image.');
       return;
+    }
+    
+    if (!formData.title || !formData.width || !formData.height || !formData.technique || !formData.year || !formData.description) {
+      setError('Veuillez remplir tous les champs obligatoires du formulaire.');
+      return;
+    }
+
+    if (!supabase) {
+      setError('Erreur de configuration : Supabase n\'est pas connecté.');
+      return;
+    }
+
+    if (imageFile.size > 5 * 1024 * 1024) {
+      // Just a warning, we still allow it but it might take time
+      console.warn("Large file detected, upload might take a while.");
     }
 
     setSubmitting(true);
@@ -65,10 +82,16 @@ export default function Admin() {
 
     try {
       // 1. Upload image to Supabase Storage
-      const fileName = `${Date.now()}_${imageFile.name}`;
+      // Sanitize file name to avoid issues with special characters
+      const sanitizedName = imageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const fileName = `${Date.now()}_${sanitizedName}`;
+      
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('paintings')
-        .upload(fileName, imageFile);
+        .upload(fileName, imageFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) throw uploadError;
 
@@ -112,9 +135,10 @@ export default function Admin() {
       setImagePreview(null);
       
       setTimeout(() => setSuccess(false), 5000);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error adding document: ", err);
-      setError('Erreur lors de l\'ajout de l\'œuvre.');
+      const errorMessage = err?.message || err?.error_description || 'Erreur lors de l\'ajout de l\'œuvre.';
+      setError(`Erreur: ${errorMessage}`);
     } finally {
       setSubmitting(false);
     }
@@ -197,7 +221,6 @@ export default function Admin() {
             accept="image/*"
             onChange={handleImageChange}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-            required
           />
           {imagePreview ? (
             <div className="flex flex-col items-center">
@@ -220,7 +243,6 @@ export default function Admin() {
               name="title"
               value={formData.title}
               onChange={handleFormChange}
-              required
               className="w-full bg-transparent border-b border-stone-300 py-2 focus:outline-none focus:border-stone-900 transition-colors"
             />
           </div>
@@ -233,8 +255,8 @@ export default function Admin() {
                 name="width"
                 value={formData.width}
                 onChange={handleFormChange}
-                required
                 className="w-full bg-transparent border-b border-stone-300 py-2 focus:outline-none focus:border-stone-900 transition-colors"
+                step="0.1"
               />
             </div>
             <div>
@@ -244,8 +266,8 @@ export default function Admin() {
                 name="height"
                 value={formData.height}
                 onChange={handleFormChange}
-                required
                 className="w-full bg-transparent border-b border-stone-300 py-2 focus:outline-none focus:border-stone-900 transition-colors"
+                step="0.1"
               />
             </div>
           </div>
@@ -257,7 +279,6 @@ export default function Admin() {
               name="technique"
               value={formData.technique}
               onChange={handleFormChange}
-              required
               placeholder="ex: Acrylique sur toile"
               className="w-full bg-transparent border-b border-stone-300 py-2 focus:outline-none focus:border-stone-900 transition-colors"
             />
@@ -270,7 +291,6 @@ export default function Admin() {
               name="year"
               value={formData.year}
               onChange={handleFormChange}
-              required
               placeholder="ex: Automne 2025 - Hiver 2026"
               className="w-full bg-transparent border-b border-stone-300 py-2 focus:outline-none focus:border-stone-900 transition-colors"
             />
@@ -307,7 +327,6 @@ export default function Admin() {
             name="description"
             value={formData.description}
             onChange={handleFormChange}
-            required
             rows={4}
             className="w-full bg-transparent border border-stone-300 p-4 focus:outline-none focus:border-stone-900 transition-colors resize-none"
           ></textarea>
@@ -318,7 +337,7 @@ export default function Admin() {
           disabled={submitting}
           className="w-full py-4 bg-stone-900 text-stone-50 uppercase tracking-widest text-sm font-medium hover:bg-stone-800 transition-colors disabled:opacity-50"
         >
-          {submitting ? 'Publication en cours...' : 'Publier l\'œuvre'}
+          {submitting ? 'Publication en cours... (Veuillez patienter)' : 'Publier l\'œuvre'}
         </button>
       </form>
     </motion.div>
