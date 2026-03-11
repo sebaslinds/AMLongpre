@@ -86,7 +86,7 @@ export default function Admin() {
             width: Number(formData.width),
             height: Number(formData.height),
             technique: formData.technique,
-            year: Number(formData.year),
+            year: formData.year,
             description: formData.description,
             price: formData.price ? Number(formData.price) : null,
             status: formData.status,
@@ -266,11 +266,12 @@ export default function Admin() {
           <div>
             <label className="block text-xs uppercase tracking-widest text-stone-500 mb-2">Année</label>
             <input
-              type="number"
+              type="text"
               name="year"
               value={formData.year}
               onChange={handleFormChange}
               required
+              placeholder="ex: Automne 2025 - Hiver 2026"
               className="w-full bg-transparent border-b border-stone-300 py-2 focus:outline-none focus:border-stone-900 transition-colors"
             />
           </div>

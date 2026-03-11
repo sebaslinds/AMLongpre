@@ -5,7 +5,7 @@ export interface Painting {
   width: number;
   height: number;
   technique: string;
-  year: number;
+  year: string;
   description: string;
   price?: number;
   status: 'disponible' | 'réservé';
