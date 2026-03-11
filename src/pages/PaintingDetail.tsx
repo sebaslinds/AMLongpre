@@ -60,6 +60,23 @@ export default function PaintingDetail() {
     setSubmitError('');
 
     try {
+      // 1. Sauvegarder dans Supabase
+      if (supabase && painting) {
+        const { error: dbError } = await supabase.from('reservations').insert([{
+          painting_id: painting.id,
+          painting_title: painting.title,
+          customer_name: formData.name,
+          customer_email: formData.email,
+          message: formData.message
+        }]);
+        
+        if (dbError) {
+          console.error("Erreur lors de la sauvegarde dans Supabase:", dbError);
+          // On continue quand même pour essayer d'envoyer le courriel
+        }
+      }
+
+      // 2. Envoyer le courriel via l'API
       const response = await fetch('/api/reserve', {
         method: 'POST',
         headers: {
