@@ -1,7 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Type, FunctionDeclaration } from '@google/genai';
+import { useLanguage } from '../contexts/LanguageContext';
+import { supabase } from '../supabase';
 
 // Initialize Gemini SDK lazily
 let ai: GoogleGenAI | null = null;
@@ -18,9 +21,11 @@ interface Message {
 }
 
 export default function Chatbot() {
+  const { t, language } = useLanguage();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { id: '1', text: 'Bonjour ! Je suis l\'assistant virtuel de la galerie. Comment puis-je vous aider aujourd\'hui ?', sender: 'bot' }
+    { id: '1', text: t('chat.welcome'), sender: 'bot' }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -38,14 +43,33 @@ export default function Chatbot() {
 
   useEffect(() => {
     if (!chatRef.current && ai) {
+      const systemInstruction = language === 'fr' 
+        ? "Tu es l'assistant virtuel de la galerie d'art de l'artiste peintre A.M Longpré. Ton rôle est d'accueillir les visiteurs, de répondre à leurs questions sur les œuvres, la démarche artistique, et de les guider pour réserver une toile. Sois poli, professionnel, et passionné par l'art. Le style de l'artiste est entre l'abstraction et la figuration, explorant la couleur et la matière. Si l'utilisateur veut réserver une œuvre, demande-lui laquelle s'il ne l'a pas précisé. S'il précise le nom de l'œuvre, utilise l'outil reserveArtwork avec le titre exact."
+        : "You are the virtual assistant of the art gallery of painter A.M Longpré. Your role is to welcome visitors, answer their questions about the artworks, the artistic approach, and guide them to reserve a canvas. Be polite, professional, and passionate about art. The artist's style is between abstraction and figuration, exploring color and material. If the user wants to reserve an artwork, ask them which one if they haven't specified. If they specify the name of the artwork, use the reserveArtwork tool with the exact title.";
+
+      const reserveArtworkFunctionDeclaration: FunctionDeclaration = {
+        name: "reserveArtwork",
+        parameters: {
+          type: Type.OBJECT,
+          description: "Redirect the user to the reservation form for a specific artwork.",
+          properties: {
+            artworkTitle: {
+              type: Type.STRING,
+              description: "The title of the artwork the user wants to reserve. If not specified, leave empty.",
+            },
+          },
+        },
+      };
+
       chatRef.current = ai.chats.create({
         model: "gemini-3.1-pro-preview",
         config: {
-          systemInstruction: "Tu es l'assistant virtuel de la galerie d'art de l'artiste peintre A.M Longpré. Ton rôle est d'accueillir les visiteurs, de répondre à leurs questions sur les œuvres, la démarche artistique, et de les guider pour réserver une toile. Sois poli, professionnel, et passionné par l'art. Le style de l'artiste est entre l'abstraction et la figuration, explorant la couleur et la matière. Les réservations se font via le formulaire sur la page de chaque œuvre.",
+          systemInstruction: systemInstruction,
+          tools: [{ functionDeclarations: [reserveArtworkFunctionDeclaration] }],
         }
       });
     }
-  }, []);
+  }, [language]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -62,9 +86,55 @@ export default function Chatbot() {
       
       const response = await chatRef.current.sendMessage({ message: userMessage.text });
       
+      const functionCalls = response.functionCalls;
+      if (functionCalls && functionCalls.length > 0) {
+        const call = functionCalls[0];
+        if (call.name === 'reserveArtwork') {
+          const title = call.args?.artworkTitle as string | undefined;
+          
+          if (title && supabase) {
+            // Fetch all paintings to do a robust client-side search (handles accents)
+            const { data } = await supabase
+              .from('paintings')
+              .select('id, title');
+              
+            if (data) {
+              const paintings = data as { id: string, title: string }[];
+              const normalizedSearch = title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+              const match = paintings.find(p => 
+                p.title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(normalizedSearch)
+              );
+              
+              if (match) {
+                setMessages(prev => [...prev, {
+                  id: (Date.now() + 1).toString(),
+                  text: language === 'fr' ? `Redirection vers le formulaire de réservation pour ${match.title}...` : `Redirecting to the reservation form for ${match.title}...`,
+                  sender: 'bot'
+                }]);
+                
+                navigate(`/painting/${match.id}?reserve=true`);
+                setIsOpen(false);
+                return;
+              }
+            }
+          }
+          
+          setMessages(prev => [...prev, {
+            id: (Date.now() + 1).toString(),
+            text: language === 'fr' ? "Redirection vers la galerie pour choisir une œuvre..." : "Redirecting to the gallery to choose an artwork...",
+            sender: 'bot'
+          }]);
+          
+          // Fallback to gallery if no title or not found
+          navigate('/gallery');
+          setIsOpen(false);
+          return;
+        }
+      }
+
       const botMessage: Message = { 
         id: (Date.now() + 1).toString(), 
-        text: response.text || "Désolé, je n'ai pas pu générer de réponse.", 
+        text: response.text || t('chat.error.generate'), 
         sender: 'bot' 
       };
       
@@ -73,7 +143,7 @@ export default function Chatbot() {
       console.error("Error generating response:", error);
       const errorMessage: Message = { 
         id: (Date.now() + 1).toString(), 
-        text: "Désolé, une erreur est survenue lors de la communication avec l'assistant.", 
+        text: t('chat.error.network'), 
         sender: 'bot' 
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -114,7 +184,7 @@ export default function Chatbot() {
             <div className="bg-stone-900 text-stone-50 p-4 flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <Bot size={20} />
-                <span className="font-serif tracking-wide">Assistant Galerie</span>
+                <span className="font-serif tracking-wide">{t('chat.title')}</span>
               </div>
               <button 
                 onClick={() => setIsOpen(false)}
@@ -168,7 +238,7 @@ export default function Chatbot() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyPress}
-                  placeholder="Posez votre question..."
+                  placeholder={t('chat.placeholder')}
                   className="flex-1 bg-transparent border-none focus:outline-none text-sm py-1"
                   disabled={isLoading}
                 />

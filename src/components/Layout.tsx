@@ -1,24 +1,30 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Menu, X, Instagram, Facebook, Mail } from 'lucide-react';
+import { Menu, X, Instagram, Facebook, Mail, Globe } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 const navLinks = [
-  { name: 'Accueil', path: '/' },
-  { name: 'Galerie', path: '/gallery' },
-  { name: 'À propos', path: '/about' },
-  { name: 'Admin', path: '/admin' },
+  { key: 'nav.home', path: '/' },
+  { key: 'nav.gallery', path: '/gallery' },
+  { key: 'nav.about', path: '/about' },
+  { key: 'nav.admin', path: '/admin' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const location = useLocation();
+  const { language, setLanguage, t } = useLanguage();
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'fr' ? 'en' : 'fr');
+  };
 
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 font-sans selection:bg-stone-200 flex flex-col">
@@ -30,6 +36,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
+            <button
+              onClick={toggleLanguage}
+              className="flex items-center gap-2 text-sm tracking-widest uppercase transition-colors text-stone-500 hover:text-stone-900"
+              aria-label="Toggle language"
+            >
+              <Globe size={16} />
+              {language === 'fr' ? 'EN' : 'FR'}
+            </button>
             {navLinks.map((link) => (
               <Link
                 key={link.path}
@@ -39,19 +53,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   location.pathname === link.path ? 'text-stone-900 font-medium' : 'text-stone-500'
                 )}
               >
-                {link.name}
+                {t(link.key)}
               </Link>
             ))}
           </nav>
 
           {/* Mobile Menu Toggle */}
-          <button
-            className="md:hidden p-2 -mr-2 text-stone-600"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          <div className="md:hidden flex items-center gap-4">
+            <button
+              onClick={toggleLanguage}
+              className="text-sm tracking-widest uppercase transition-colors text-stone-500 hover:text-stone-900 flex items-center gap-1"
+            >
+              <Globe size={16} />
+              {language === 'fr' ? 'EN' : 'FR'}
+            </button>
+            <button
+              className="p-2 -mr-2 text-stone-600"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Nav */}
@@ -72,7 +95,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   location.pathname === link.path ? 'text-stone-900 font-medium' : 'text-stone-500'
                 )}
               >
-                {link.name}
+                {t(link.key)}
               </Link>
             ))}
           </motion.nav>
@@ -87,7 +110,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="text-center md:text-left">
             <h3 className="font-serif text-lg tracking-widest uppercase mb-2">A.M Longpré</h3>
-            <p className="text-sm text-stone-500">Artiste Peintre Contemporaine</p>
+            <p className="text-sm text-stone-500">{t('footer.subtitle')}</p>
           </div>
           
           <div className="flex items-center gap-6 text-stone-500">
@@ -103,9 +126,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="text-sm text-stone-400 text-center md:text-right">
-            &copy; {new Date().getFullYear()} A.M Longpré. Tous droits réservés.
-            <br />
-            <Link to="/admin" className="hover:text-stone-600 transition-colors text-xs">Accès Artiste</Link>
+            &copy; {new Date().getFullYear()} A.M Longpré. {t('footer.rights')}
           </div>
         </div>
       </footer>

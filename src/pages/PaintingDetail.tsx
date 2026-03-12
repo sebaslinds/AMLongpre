@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '../supabase';
 import { Painting } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function PaintingDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [painting, setPainting] = useState<Painting | null>(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -15,6 +17,24 @@ export default function PaintingDetail() {
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const { t } = useLanguage();
+  const formRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Check if we should auto-open the form
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('reserve') === 'true') {
+      setShowForm(true);
+    }
+  }, [location.search]);
+
+  useEffect(() => {
+    if (showForm && formRef.current) {
+      setTimeout(() => {
+        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [showForm]);
 
   useEffect(() => {
     async function fetchPainting() {
@@ -22,6 +42,11 @@ export default function PaintingDetail() {
         setLoading(false);
         return;
       }
+      
+      setLoading(true);
+      setSubmitSuccess(false);
+      setSubmitError('');
+      
       try {
         const { data, error } = await supabase
           .from('paintings')
@@ -94,10 +119,10 @@ export default function PaintingDetail() {
         setShowForm(false);
       } else {
         const data = await response.json();
-        setSubmitError(data.error || 'Une erreur est survenue.');
+        setSubmitError(data.error || t('detail.error.server'));
       }
     } catch (error) {
-      setSubmitError('Erreur de connexion au serveur.');
+      setSubmitError(t('detail.error.network'));
     } finally {
       setSubmitting(false);
     }
@@ -114,9 +139,9 @@ export default function PaintingDetail() {
   if (!painting) {
     return (
       <div className="flex flex-col justify-center items-center h-screen text-stone-500">
-        <h1 className="text-3xl font-serif mb-4">Œuvre introuvable</h1>
+        <h1 className="text-3xl font-serif mb-4">{t('detail.notfound')}</h1>
         <button onClick={() => navigate('/gallery')} className="text-sm uppercase tracking-widest border-b border-stone-500 pb-1 hover:text-stone-900 hover:border-stone-900 transition-colors">
-          Retour à la galerie
+          {t('detail.back')}
         </button>
       </div>
     );
@@ -153,7 +178,7 @@ export default function PaintingDetail() {
           </div>
           {painting.status === 'réservé' && (
             <div className="absolute top-6 right-6 bg-stone-900/80 text-stone-50 px-4 py-2 text-sm uppercase tracking-widest backdrop-blur-sm">
-              Réservé
+              {t('gallery.status.reserved')}
             </div>
           )}
         </motion.div>
@@ -169,34 +194,34 @@ export default function PaintingDetail() {
             onClick={() => navigate('/gallery')}
             className="self-start text-xs uppercase tracking-widest text-stone-400 hover:text-stone-900 transition-colors mb-8"
           >
-            ← Retour à la galerie
+            ← {t('detail.back')}
           </button>
 
           <h1 className="text-4xl md:text-5xl font-serif text-stone-900 mb-6">{painting.title}</h1>
           
           <div className="space-y-4 text-stone-600 mb-10 border-b border-stone-200 pb-10">
             <p className="flex justify-between">
-              <span className="uppercase text-xs tracking-widest text-stone-400">Dimensions</span>
+              <span className="uppercase text-xs tracking-widest text-stone-400">{t('detail.dimensions')}</span>
               <span className="font-medium">{painting.width} x {painting.height} cm</span>
             </p>
             <p className="flex justify-between">
-              <span className="uppercase text-xs tracking-widest text-stone-400">Technique</span>
+              <span className="uppercase text-xs tracking-widest text-stone-400">{t('detail.technique')}</span>
               <span className="font-medium">{painting.technique}</span>
             </p>
             <p className="flex justify-between">
-              <span className="uppercase text-xs tracking-widest text-stone-400">Année</span>
+              <span className="uppercase text-xs tracking-widest text-stone-400">{t('detail.year')}</span>
               <span className="font-medium">{painting.year}</span>
             </p>
             {painting.price && painting.status === 'disponible' && (
               <p className="flex justify-between items-center mt-6 pt-6 border-t border-stone-100">
-                <span className="uppercase text-xs tracking-widest text-stone-400">Prix</span>
+                <span className="uppercase text-xs tracking-widest text-stone-400">{t('detail.price')}</span>
                 <span className="text-2xl font-serif text-stone-900">{painting.price} $</span>
               </p>
             )}
           </div>
 
           <div className="prose prose-stone mb-12">
-            <h3 className="text-sm uppercase tracking-widest text-stone-400 mb-4 font-normal">À propos de l'œuvre</h3>
+            <h3 className="text-sm uppercase tracking-widest text-stone-400 mb-4 font-normal">{t('detail.about')}</h3>
             <p className="text-stone-600 leading-relaxed whitespace-pre-line">{painting.description}</p>
           </div>
 
@@ -205,27 +230,28 @@ export default function PaintingDetail() {
               onClick={handleReserveClick}
               className="w-full py-4 bg-stone-900 text-stone-50 uppercase tracking-widest text-sm font-medium hover:bg-stone-800 transition-colors"
             >
-              Réserver cette toile
+              {t('detail.reserve')}
             </button>
           )}
 
           {submitSuccess && (
             <div className="bg-stone-100 p-6 text-center border border-stone-200">
-              <h3 className="font-serif text-xl text-stone-900 mb-2">Demande envoyée</h3>
-              <p className="text-stone-600 text-sm">Merci pour votre intérêt. L'artiste vous contactera sous peu.</p>
+              <h3 className="font-serif text-xl text-stone-900 mb-2">{t('detail.success.title')}</h3>
+              <p className="text-stone-600 text-sm">{t('detail.success.desc')}</p>
             </div>
           )}
 
           {showForm && (
             <motion.div
+              ref={formRef}
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               className="bg-stone-50 p-8 border border-stone-200"
             >
-              <h3 className="font-serif text-2xl text-stone-900 mb-6">Demande de réservation</h3>
+              <h3 className="font-serif text-2xl text-stone-900 mb-6">{t('detail.form.title')}</h3>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <label htmlFor="name" className="block text-xs uppercase tracking-widest text-stone-500 mb-2">Nom complet</label>
+                  <label htmlFor="name" className="block text-xs uppercase tracking-widest text-stone-500 mb-2">{t('detail.form.name')}</label>
                   <input
                     type="text"
                     id="name"
@@ -237,7 +263,7 @@ export default function PaintingDetail() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="email" className="block text-xs uppercase tracking-widest text-stone-500 mb-2">Courriel</label>
+                  <label htmlFor="email" className="block text-xs uppercase tracking-widest text-stone-500 mb-2">{t('detail.form.email')}</label>
                   <input
                     type="email"
                     id="email"
@@ -249,7 +275,7 @@ export default function PaintingDetail() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="message" className="block text-xs uppercase tracking-widest text-stone-500 mb-2">Message</label>
+                  <label htmlFor="message" className="block text-xs uppercase tracking-widest text-stone-500 mb-2">{t('detail.form.message')}</label>
                   <textarea
                     id="message"
                     name="message"
@@ -258,7 +284,7 @@ export default function PaintingDetail() {
                     value={formData.message}
                     onChange={handleFormChange}
                     className="w-full bg-transparent border-b border-stone-300 py-2 focus:outline-none focus:border-stone-900 transition-colors resize-none"
-                    placeholder="Précisez vos questions ou intentions d'achat..."
+                    placeholder={t('detail.form.placeholder')}
                   ></textarea>
                 </div>
                 
@@ -270,14 +296,14 @@ export default function PaintingDetail() {
                     onClick={() => setShowForm(false)}
                     className="flex-1 py-3 border border-stone-300 text-stone-600 uppercase tracking-widest text-xs font-medium hover:bg-stone-100 transition-colors"
                   >
-                    Annuler
+                    {t('detail.form.cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
                     className="flex-1 py-3 bg-stone-900 text-stone-50 uppercase tracking-widest text-xs font-medium hover:bg-stone-800 transition-colors disabled:opacity-50"
                   >
-                    {submitting ? 'Envoi...' : 'Envoyer'}
+                    {submitting ? t('detail.form.submitting') : t('detail.form.submit')}
                   </button>
                 </div>
               </form>

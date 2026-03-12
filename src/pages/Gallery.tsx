@@ -4,11 +4,13 @@ import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '../supabase';
 import { Painting } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Gallery() {
   const [paintings, setPaintings] = useState<Painting[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const { t } = useLanguage();
 
   useEffect(() => {
     async function fetchPaintings() {
@@ -53,25 +55,25 @@ export default function Gallery() {
       className="max-w-7xl mx-auto px-6 py-12"
     >
       <Helmet>
-        <title>Galerie | A.M Longpré</title>
+        <title>{t('gallery.title')} | A.M Longpré</title>
         <meta name="description" content="Découvrez les œuvres originales de A.M Longpré. Peintures contemporaines, abstraites et figuratives." />
       </Helmet>
 
       <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
-        <h1 className="text-4xl font-serif tracking-widest uppercase text-stone-900">Galerie</h1>
+        <h1 className="text-4xl font-serif tracking-widest uppercase text-stone-900">{t('gallery.title')}</h1>
         
         <div className="flex gap-4">
           <button
             onClick={() => setFilter('all')}
             className={`px-4 py-2 text-sm uppercase tracking-wider transition-colors ${filter === 'all' ? 'border-b-2 border-stone-900 text-stone-900' : 'text-stone-500 hover:text-stone-900'}`}
           >
-            Toutes
+            {t('gallery.filter.all')}
           </button>
           <button
             onClick={() => setFilter('available')}
             className={`px-4 py-2 text-sm uppercase tracking-wider transition-colors ${filter === 'available' ? 'border-b-2 border-stone-900 text-stone-900' : 'text-stone-500 hover:text-stone-900'}`}
           >
-            Disponibles
+            {t('gallery.filter.available')}
           </button>
         </div>
       </div>
@@ -82,8 +84,7 @@ export default function Gallery() {
         </div>
       ) : filteredPaintings.length === 0 ? (
         <div className="text-center text-stone-500 py-20">
-          <p className="text-xl font-serif">Aucune œuvre trouvée.</p>
-          {!supabase && <p className="mt-4 text-sm">Veuillez configurer Supabase pour voir les œuvres.</p>}
+          <p className="text-xl font-serif">{t('gallery.empty')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
@@ -104,7 +105,7 @@ export default function Gallery() {
                   />
                   {painting.status === 'réservé' && (
                     <div className="absolute top-4 right-4 bg-stone-900/80 text-stone-50 px-3 py-1 text-xs uppercase tracking-widest backdrop-blur-sm">
-                      Réservé
+                      {t('gallery.status.reserved')}
                     </div>
                   )}
                 </div>

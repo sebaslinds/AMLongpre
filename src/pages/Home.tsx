@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Home() {
+  const { t } = useLanguage();
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -12,8 +15,8 @@ export default function Home() {
       className="min-h-[calc(100vh-80px)] flex flex-col items-center justify-center bg-stone-50"
     >
       <Helmet>
-        <title>A.M Longpré | Artiste Peintre Contemporaine</title>
-        <meta name="description" content="Bienvenue dans l’univers artistique de A.M Longpré. Chaque toile est une exploration de la couleur, de la matière et de l’émotion." />
+        <title>{t('home.hero.title')} | {t('footer.subtitle')}</title>
+        <meta name="description" content={t('home.hero.subtitle')} />
       </Helmet>
 
       <section className="relative w-full h-[80vh] flex items-center justify-center overflow-hidden">
@@ -36,7 +39,7 @@ export default function Home() {
             transition={{ delay: 0.2, duration: 0.8 }}
             className="text-5xl md:text-7xl font-serif text-stone-50 mb-6 tracking-wide"
           >
-            A.M Longpré
+            {t('home.hero.title')}
           </motion.h1>
           
           <motion.p 
@@ -45,8 +48,7 @@ export default function Home() {
             transition={{ delay: 0.4, duration: 0.8 }}
             className="text-lg md:text-2xl text-stone-200 font-light mb-12 leading-relaxed"
           >
-            Bienvenue dans l’univers artistique de A.M Longpré. <br className="hidden md:block" />
-            Chaque toile est une exploration de la couleur, de la matière et de l’émotion.
+            {t('home.hero.subtitle')}
           </motion.p>
           
           <motion.div
@@ -58,7 +60,7 @@ export default function Home() {
               to="/gallery"
               className="inline-block px-8 py-4 bg-stone-50 text-stone-900 uppercase tracking-widest text-sm font-medium hover:bg-stone-200 transition-colors shadow-lg"
             >
-              Voir la galerie
+              {t('home.hero.cta')}
             </Link>
           </motion.div>
         </div>

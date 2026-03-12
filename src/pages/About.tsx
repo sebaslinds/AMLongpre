@@ -1,8 +1,11 @@
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { Instagram, Facebook, Mail } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function About() {
+  const { t } = useLanguage();
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -12,8 +15,8 @@ export default function About() {
       className="max-w-7xl mx-auto px-6 py-12 md:py-24"
     >
       <Helmet>
-        <title>À propos | A.M Longpré</title>
-        <meta name="description" content="Découvrez la biographie, la démarche artistique et les inspirations de l'artiste peintre A.M Longpré." />
+        <title>{t('about.title')}</title>
+        <meta name="description" content={t('about.bio.p1')} />
       </Helmet>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
@@ -53,39 +56,29 @@ export default function About() {
           transition={{ delay: 0.4, duration: 0.8 }}
           className="lg:col-span-7 flex flex-col"
         >
-          <h1 className="text-4xl md:text-5xl font-serif text-stone-900 mb-12 tracking-wide">L'Artiste</h1>
+          <h1 className="text-4xl md:text-5xl font-serif text-stone-900 mb-12 tracking-wide">{t('about.heading')}</h1>
 
           <div className="space-y-16">
             <section>
-              <h2 className="text-xs uppercase tracking-widest text-stone-400 mb-6 font-medium">Biographie</h2>
+              <h2 className="text-xs uppercase tracking-widest text-stone-400 mb-6 font-medium">{t('about.bio.title')}</h2>
               <div className="prose prose-stone prose-lg text-stone-600 leading-relaxed">
-                <p>
-                  Née avec une passion innée pour les formes et les couleurs, A.M Longpré a développé son langage visuel à travers des années d'exploration et de pratique. Son travail se situe à la frontière entre l'abstraction et la figuration, cherchant toujours à capturer l'essence émotionnelle de son sujet plutôt que sa représentation littérale.
-                </p>
-                <p>
-                  Diplômée en arts visuels, elle a perfectionné sa technique dans divers ateliers avant d'établir son propre studio. Ses œuvres font aujourd'hui partie de plusieurs collections privées.
-                </p>
+                <p>{t('about.bio.p1')}</p>
+                <p>{t('about.bio.p2')}</p>
               </div>
             </section>
 
             <section>
-              <h2 className="text-xs uppercase tracking-widest text-stone-400 mb-6 font-medium">Démarche artistique</h2>
+              <h2 className="text-xs uppercase tracking-widest text-stone-400 mb-6 font-medium">{t('about.approach.title')}</h2>
               <div className="prose prose-stone prose-lg text-stone-600 leading-relaxed">
-                <p>
-                  La démarche de l'artiste est profondément intuitive. Chaque toile commence par une impulsion, une émotion ou un souvenir qui guide les premiers coups de pinceau. Le processus est un dialogue constant avec la matière : l'acrylique, l'huile, les textures s'entremêlent pour créer une profondeur visuelle.
-                </p>
-                <p>
-                  Elle privilégie les grands formats qui permettent un engagement physique avec l'œuvre, transformant l'acte de peindre en une véritable chorégraphie.
-                </p>
+                <p>{t('about.approach.p1')}</p>
+                <p>{t('about.approach.p2')}</p>
               </div>
             </section>
 
             <section>
-              <h2 className="text-xs uppercase tracking-widest text-stone-400 mb-6 font-medium">Inspirations</h2>
+              <h2 className="text-xs uppercase tracking-widest text-stone-400 mb-6 font-medium">{t('about.inspirations.title')}</h2>
               <div className="prose prose-stone prose-lg text-stone-600 leading-relaxed">
-                <p>
-                  La nature, dans ses formes organiques et ses contrastes saisissants, demeure sa source d'inspiration première. Les paysages urbains, l'architecture et les interactions humaines nourrissent également sa réflexion sur l'espace et la lumière.
-                </p>
+                <p>{t('about.inspirations.p1')}</p>
               </div>
             </section>
           </div>

@@ -71,10 +71,16 @@ async function startServer() {
       };
 
       // In a real scenario with valid SMTP credentials, this would send the email.
-      // For this demo, we'll log it and simulate success if credentials are missing.
+      // For this demo, we'll log it and simulate success if credentials are missing or invalid.
       if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-        await transporter.sendMail(mailOptions);
-        console.log('Email sent successfully');
+        try {
+          await transporter.sendMail(mailOptions);
+          console.log('Email sent successfully');
+        } catch (emailError) {
+          console.error('Error sending email:', emailError);
+          console.log('Falling back to simulated email send due to SMTP error.');
+          console.log(mailOptions.text);
+        }
       } else {
         console.log('SMTP credentials not configured. Simulating email send:');
         console.log(mailOptions.text);
@@ -82,8 +88,8 @@ async function startServer() {
 
       res.status(200).json({ success: true, message: 'Reservation sent successfully' });
     } catch (error) {
-      console.error('Error sending email:', error);
-      res.status(500).json({ error: 'Failed to send reservation email' });
+      console.error('Unexpected error in /api/reserve:', error);
+      res.status(500).json({ error: 'An unexpected error occurred' });
     }
   });
 

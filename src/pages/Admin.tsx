@@ -3,11 +3,13 @@ import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '../supabase';
 import { Upload } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const { t } = useLanguage();
   
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -33,7 +35,7 @@ export default function Admin() {
       setIsAuthenticated(true);
       setError('');
     } else {
-      setError('Mot de passe incorrect');
+      setError(t('admin.login.error'));
     }
   };
 
@@ -57,7 +59,7 @@ export default function Admin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!imageFile || !supabase) {
-      setError('Veuillez sélectionner une image et vérifier la configuration Supabase.');
+      setError(t('admin.add.error'));
       return;
     }
 
@@ -127,7 +129,7 @@ export default function Admin() {
       setTimeout(() => setSuccess(false), 5000);
     } catch (err: any) {
       console.error("Error adding document: ", err);
-      const errorMessage = err?.message || err?.error_description || 'Erreur lors de l\'ajout de l\'œuvre.';
+      const errorMessage = err?.message || err?.error_description || t('admin.add.error.generic');
       setError(`Erreur: ${errorMessage}`);
     } finally {
       setSubmitting(false);
@@ -138,17 +140,17 @@ export default function Admin() {
     return (
       <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-stone-50 px-6">
         <Helmet>
-          <title>Connexion Admin | A.M Longpré</title>
+          <title>{t('admin.login.title')} | A.M Longpré</title>
         </Helmet>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-md bg-white p-8 shadow-xl border border-stone-100"
         >
-          <h1 className="text-2xl font-serif text-stone-900 mb-6 text-center">Accès Artiste</h1>
+          <h1 className="text-2xl font-serif text-stone-900 mb-6 text-center">{t('admin.login.title')}</h1>
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
-              <label htmlFor="password" className="block text-xs uppercase tracking-widest text-stone-500 mb-2">Mot de passe</label>
+              <label htmlFor="password" className="block text-xs uppercase tracking-widest text-stone-500 mb-2">{t('admin.login.password')}</label>
               <input
                 type="password"
                 id="password"
@@ -163,7 +165,7 @@ export default function Admin() {
               type="submit"
               className="w-full py-3 bg-stone-900 text-stone-50 uppercase tracking-widest text-xs font-medium hover:bg-stone-800 transition-colors"
             >
-              Se connecter
+              {t('admin.login.submit')}
             </button>
           </form>
         </motion.div>
@@ -178,22 +180,22 @@ export default function Admin() {
       className="max-w-4xl mx-auto px-6 py-12"
     >
       <Helmet>
-        <title>Administration | A.M Longpré</title>
+        <title>{t('admin.add.title')} | A.M Longpré</title>
       </Helmet>
 
       <div className="flex justify-between items-center mb-12">
-        <h1 className="text-3xl font-serif text-stone-900">Ajouter une œuvre</h1>
+        <h1 className="text-3xl font-serif text-stone-900">{t('admin.add.title')}</h1>
         <button 
           onClick={() => setIsAuthenticated(false)}
           className="text-xs uppercase tracking-widest text-stone-500 hover:text-stone-900 transition-colors"
         >
-          Déconnexion
+          {t('admin.add.logout')}
         </button>
       </div>
 
       {success && (
         <div className="bg-green-50 border border-green-200 text-green-800 p-4 mb-8">
-          L'œuvre a été ajoutée avec succès à la galerie.
+          {t('admin.add.success')}
         </div>
       )}
 
@@ -216,19 +218,19 @@ export default function Admin() {
           {imagePreview ? (
             <div className="flex flex-col items-center">
               <img src={imagePreview} alt="Aperçu" className="max-h-64 object-contain mb-4" />
-              <span className="text-xs uppercase tracking-widest text-stone-500 group-hover:text-stone-900 transition-colors">Changer l'image</span>
+              <span className="text-xs uppercase tracking-widest text-stone-500 group-hover:text-stone-900 transition-colors">{t('admin.form.image.change')}</span>
             </div>
           ) : (
             <div className="flex flex-col items-center py-12">
               <Upload size={32} className="text-stone-400 mb-4 group-hover:text-stone-900 transition-colors" />
-              <span className="text-sm uppercase tracking-widest text-stone-500 group-hover:text-stone-900 transition-colors">Cliquez ou glissez une image ici</span>
+              <span className="text-sm uppercase tracking-widest text-stone-500 group-hover:text-stone-900 transition-colors">{t('admin.form.image.empty')}</span>
             </div>
           )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
-            <label className="block text-xs uppercase tracking-widest text-stone-500 mb-2">Titre</label>
+            <label className="block text-xs uppercase tracking-widest text-stone-500 mb-2">{t('admin.form.title')}</label>
             <input
               type="text"
               name="title"
@@ -241,7 +243,7 @@ export default function Admin() {
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs uppercase tracking-widest text-stone-500 mb-2">Largeur (cm)</label>
+              <label className="block text-xs uppercase tracking-widest text-stone-500 mb-2">{t('admin.form.width')}</label>
               <input
                 type="number"
                 name="width"
@@ -252,7 +254,7 @@ export default function Admin() {
               />
             </div>
             <div>
-              <label className="block text-xs uppercase tracking-widest text-stone-500 mb-2">Hauteur (cm)</label>
+              <label className="block text-xs uppercase tracking-widest text-stone-500 mb-2">{t('admin.form.height')}</label>
               <input
                 type="number"
                 name="height"
@@ -265,33 +267,31 @@ export default function Admin() {
           </div>
 
           <div>
-            <label className="block text-xs uppercase tracking-widest text-stone-500 mb-2">Technique</label>
+            <label className="block text-xs uppercase tracking-widest text-stone-500 mb-2">{t('admin.form.technique')}</label>
             <input
               type="text"
               name="technique"
               value={formData.technique}
               onChange={handleFormChange}
               required
-              placeholder="ex: Acrylique sur toile"
               className="w-full bg-transparent border-b border-stone-300 py-2 focus:outline-none focus:border-stone-900 transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-xs uppercase tracking-widest text-stone-500 mb-2">Année</label>
+            <label className="block text-xs uppercase tracking-widest text-stone-500 mb-2">{t('admin.form.year')}</label>
             <input
               type="text"
               name="year"
               value={formData.year}
               onChange={handleFormChange}
               required
-              placeholder="ex: Automne 2025 - Hiver 2026"
               className="w-full bg-transparent border-b border-stone-300 py-2 focus:outline-none focus:border-stone-900 transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-xs uppercase tracking-widest text-stone-500 mb-2">Prix ($) - Optionnel</label>
+            <label className="block text-xs uppercase tracking-widest text-stone-500 mb-2">{t('admin.form.price')}</label>
             <input
               type="number"
               name="price"
@@ -302,21 +302,21 @@ export default function Admin() {
           </div>
 
           <div>
-            <label className="block text-xs uppercase tracking-widest text-stone-500 mb-2">Statut</label>
+            <label className="block text-xs uppercase tracking-widest text-stone-500 mb-2">{t('admin.form.status')}</label>
             <select
               name="status"
               value={formData.status}
               onChange={handleFormChange}
               className="w-full bg-transparent border-b border-stone-300 py-2 focus:outline-none focus:border-stone-900 transition-colors"
             >
-              <option value="disponible">Disponible</option>
-              <option value="réservé">Réservé</option>
+              <option value="disponible">{t('gallery.status.available')}</option>
+              <option value="réservé">{t('gallery.status.reserved')}</option>
             </select>
           </div>
         </div>
 
         <div>
-          <label className="block text-xs uppercase tracking-widest text-stone-500 mb-2">Description</label>
+          <label className="block text-xs uppercase tracking-widest text-stone-500 mb-2">{t('admin.form.description')}</label>
           <textarea
             name="description"
             value={formData.description}
@@ -332,7 +332,7 @@ export default function Admin() {
           disabled={submitting}
           className="w-full py-4 bg-stone-900 text-stone-50 uppercase tracking-widest text-sm font-medium hover:bg-stone-800 transition-colors disabled:opacity-50"
         >
-          {submitting ? 'Publication en cours... (Veuillez patienter)' : 'Publier l\'œuvre'}
+          {submitting ? t('admin.form.submitting') : t('admin.form.submit')}
         </button>
       </form>
     </motion.div>
