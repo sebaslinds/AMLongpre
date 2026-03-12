@@ -42,33 +42,51 @@ export default function Chatbot() {
   const chatRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!chatRef.current && ai) {
-      const systemInstruction = language === 'fr' 
-        ? "Tu es l'assistant virtuel de la galerie d'art de l'artiste peintre A.M Longpré. Ton rôle est d'accueillir les visiteurs, de répondre à leurs questions sur les œuvres, la démarche artistique, et de les guider pour réserver une toile. Sois poli, professionnel, et passionné par l'art. Le style de l'artiste est entre l'abstraction et la figuration, explorant la couleur et la matière. Si l'utilisateur veut réserver une œuvre, demande-lui laquelle s'il ne l'a pas précisé. S'il précise le nom de l'œuvre, utilise l'outil reserveArtwork avec le titre exact."
-        : "You are the virtual assistant of the art gallery of painter A.M Longpré. Your role is to welcome visitors, answer their questions about the artworks, the artistic approach, and guide them to reserve a canvas. Be polite, professional, and passionate about art. The artist's style is between abstraction and figuration, exploring color and material. If the user wants to reserve an artwork, ask them which one if they haven't specified. If they specify the name of the artwork, use the reserveArtwork tool with the exact title.";
-
-      const reserveArtworkFunctionDeclaration: FunctionDeclaration = {
-        name: "reserveArtwork",
-        parameters: {
-          type: Type.OBJECT,
-          description: "Redirect the user to the reservation form for a specific artwork.",
-          properties: {
-            artworkTitle: {
-              type: Type.STRING,
-              description: "The title of the artwork the user wants to reserve. If not specified, leave empty.",
-            },
-          },
-        },
-      };
-
-      chatRef.current = ai.chats.create({
-        model: "gemini-3.1-pro-preview",
-        config: {
-          systemInstruction: systemInstruction,
-          tools: [{ functionDeclarations: [reserveArtworkFunctionDeclaration] }],
+    async function initChat() {
+      if (!chatRef.current && ai) {
+        let paintingsContext = "";
+        if (supabase) {
+          try {
+            const { data } = await supabase.from('paintings').select('id, title, description, status, price');
+            if (data && data.length > 0) {
+              const paintings = data as { id: string, title: string, description: string, status: string, price: number }[];
+              paintingsContext = "\n\nVoici la liste des œuvres disponibles dans la galerie :\n" + 
+                paintings.map(p => `- ID: ${p.id} | Titre: "${p.title}" | Statut: ${p.status} | Prix: ${p.price}$ | Description: ${p.description}`).join("\n");
+            }
+          } catch (err) {
+            console.error("Error fetching paintings for chat context:", err);
+          }
         }
-      });
+
+        const systemInstruction = language === 'fr' 
+          ? `Tu es l'assistant virtuel de la galerie d'art de l'artiste peintre A.M Longpré. Ton rôle est d'accueillir les visiteurs, de répondre à leurs questions sur les œuvres, la démarche artistique, et de les guider pour réserver une toile. Sois poli, professionnel, et passionné par l'art. Le style de l'artiste est entre l'abstraction et la figuration, explorant la couleur et la matière. Si l'utilisateur veut réserver une œuvre, demande-lui laquelle s'il ne l'a pas précisé. S'il précise le nom de l'œuvre ou la décrit (ex: "la toile blanche"), utilise l'outil reserveArtwork avec l'ID exact de l'œuvre correspondante.${paintingsContext}`
+          : `You are the virtual assistant of the art gallery of painter A.M Longpré. Your role is to welcome visitors, answer their questions about the artworks, the artistic approach, and guide them to reserve a canvas. Be polite, professional, and passionate about art. The artist's style is between abstraction and figuration, exploring color and material. If the user wants to reserve an artwork, ask them which one if they haven't specified. If they specify the name of the artwork or describe it, use the reserveArtwork tool with the exact ID of the corresponding artwork.${paintingsContext}`;
+
+        const reserveArtworkFunctionDeclaration: FunctionDeclaration = {
+          name: "reserveArtwork",
+          parameters: {
+            type: Type.OBJECT,
+            description: "Redirect the user to the reservation form for a specific artwork.",
+            properties: {
+              paintingId: {
+                type: Type.STRING,
+                description: "The exact ID of the artwork the user wants to reserve.",
+              },
+            },
+            required: ["paintingId"],
+          },
+        };
+
+        chatRef.current = ai.chats.create({
+          model: "gemini-3.1-pro-preview",
+          config: {
+            systemInstruction: systemInstruction,
+            tools: [{ functionDeclarations: [reserveArtworkFunctionDeclaration] }],
+          }
+        });
+      }
     }
+    initChat();
   }, [language]);
 
   const handleSend = async () => {
@@ -90,32 +108,28 @@ export default function Chatbot() {
       if (functionCalls && functionCalls.length > 0) {
         const call = functionCalls[0];
         if (call.name === 'reserveArtwork') {
-          const title = call.args?.artworkTitle as string | undefined;
+          const paintingId = call.args?.paintingId as string | undefined;
           
-          if (title && supabase) {
-            // Fetch all paintings to do a robust client-side search (handles accents)
+          if (paintingId && supabase) {
+            // Fetch the specific painting to confirm it exists and get its title
             const { data } = await supabase
               .from('paintings')
-              .select('id, title');
+              .select('id, title')
+              .eq('id', paintingId)
+              .single();
               
             if (data) {
-              const paintings = data as { id: string, title: string }[];
-              const normalizedSearch = title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-              const match = paintings.find(p => 
-                p.title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(normalizedSearch)
-              );
+              const match = data as { id: string, title: string };
               
-              if (match) {
-                setMessages(prev => [...prev, {
-                  id: (Date.now() + 1).toString(),
-                  text: language === 'fr' ? `Redirection vers le formulaire de réservation pour ${match.title}...` : `Redirecting to the reservation form for ${match.title}...`,
-                  sender: 'bot'
-                }]);
-                
-                navigate(`/painting/${match.id}?reserve=true`);
-                setIsOpen(false);
-                return;
-              }
+              setMessages(prev => [...prev, {
+                id: (Date.now() + 1).toString(),
+                text: language === 'fr' ? `Redirection vers le formulaire de réservation pour ${match.title}...` : `Redirecting to the reservation form for ${match.title}...`,
+                sender: 'bot'
+              }]);
+              
+              navigate(`/painting/${match.id}?reserve=true`);
+              setIsOpen(false);
+              return;
             }
           }
           
@@ -125,7 +139,7 @@ export default function Chatbot() {
             sender: 'bot'
           }]);
           
-          // Fallback to gallery if no title or not found
+          // Fallback to gallery if no ID or not found
           navigate('/gallery');
           setIsOpen(false);
           return;
