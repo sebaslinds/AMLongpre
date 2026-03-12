@@ -1,14 +1,38 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://yzmmlufuvjsnphhjmzex.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6bW1sdWZ1dmpzbnBoaGptemV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMTk2NDQsImV4cCI6MjA4ODc5NTY0NH0.UT_-ZHPwHmI-hopoQlW7AYH0G3p2c3GI-XJXLbu4eWU';
+const envUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
+const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
+
+const isPlaceholder = (val: string | undefined) => !val || val.trim() === '' || val.includes('YOUR_SUPABASE');
+
+const isValidUrl = (url: string | undefined) => {
+  if (!url) return false;
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const isValidJwt = (token: string | undefined) => {
+  if (!token) return false;
+  return token.split('.').length === 3;
+};
+
+const fallbackUrl = 'https://ohbciguplljqzzhgwefc.supabase.co';
+const fallbackKey = 'sb_publishable_JJ83Zknthh0bAAEpREFHnA_XrCInCNL';
+
+// Only use the environment URL if it's a valid URL format and not a placeholder
+const supabaseUrl = (envUrl && isValidUrl(envUrl) && !isPlaceholder(envUrl)) ? envUrl : fallbackUrl;
+const supabaseAnonKey = (envKey && isValidJwt(envKey) && !isPlaceholder(envKey)) ? envKey : fallbackKey;
 
 let supabase: ReturnType<typeof createClient> | null = null;
 
-if (supabaseUrl && supabaseAnonKey) {
+try {
   supabase = createClient(supabaseUrl, supabaseAnonKey);
-} else {
-  console.warn("Supabase config is missing. Please add it to your .env file.");
+} catch (error) {
+  console.error("Error creating Supabase client:", error);
 }
 
 export { supabase };

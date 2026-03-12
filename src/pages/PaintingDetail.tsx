@@ -62,7 +62,7 @@ export default function PaintingDetail() {
     try {
       // 1. Sauvegarder dans Supabase
       if (supabase && painting) {
-        const { error: dbError } = await supabase.from('reservations').insert([{
+        const { error: dbError } = await (supabase as any).from('reservations').insert([{
           painting_id: painting.id,
           painting_title: painting.title,
           customer_name: formData.name,

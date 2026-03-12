@@ -3,8 +3,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 
-// Initialize Gemini SDK
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Initialize Gemini SDK lazily
+let ai: GoogleGenAI | null = null;
+try {
+  ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+} catch (e) {
+  console.error("Failed to initialize GoogleGenAI", e);
+}
 
 interface Message {
   id: string;
@@ -32,7 +37,7 @@ export default function Chatbot() {
   const chatRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!chatRef.current) {
+    if (!chatRef.current && ai) {
       chatRef.current = ai.chats.create({
         model: "gemini-3.1-pro-preview",
         config: {
