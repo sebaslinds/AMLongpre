@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '../supabase';
-import { Upload } from 'lucide-react';
+import { Upload, Trash2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { Painting } from '../types';
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -26,6 +27,66 @@ export default function Admin() {
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [paintings, setPaintings] = useState<Painting[]>([]);
+  const [loadingPaintings, setLoadingPaintings] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchPaintings();
+    }
+  }, [isAuthenticated]);
+
+  const fetchPaintings = async () => {
+    if (!supabase) return;
+    setLoadingPaintings(true);
+    try {
+      const { data, error } = await supabase
+        .from('paintings')
+        .select('*')
+        .order('createdAt', { ascending: false });
+        
+      if (error) throw error;
+      if (data) setPaintings(data as Painting[]);
+    } catch (err) {
+      console.error("Error fetching paintings:", err);
+    } finally {
+      setLoadingPaintings(false);
+    }
+  };
+
+  const handleDelete = async (id: string, imageURL: string) => {
+    if (!supabase) return;
+    if (!window.confirm(t('admin.manage.delete.confirm'))) return;
+
+    try {
+      // 1. Delete from database
+      const { error: dbError } = await supabase
+        .from('paintings')
+        .delete()
+        .eq('id', id);
+
+      if (dbError) throw dbError;
+
+      // 2. Try to delete image from storage
+      try {
+        const urlParts = imageURL.split('/');
+        const fileName = urlParts[urlParts.length - 1];
+        if (fileName) {
+          await supabase.storage.from('paintings').remove([fileName]);
+        }
+      } catch (storageErr) {
+        console.error("Error deleting image from storage:", storageErr);
+        // We continue even if storage deletion fails
+      }
+
+      setPaintings(paintings.filter(p => p.id !== id));
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 5000);
+    } catch (err: any) {
+      console.error("Error deleting painting:", err);
+      setError(t('admin.manage.delete.error'));
+    }
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,6 +173,8 @@ export default function Admin() {
       if (insertError) throw insertError;
 
       setSuccess(true);
+      // Refresh paintings list
+      fetchPaintings();
       // Reset form
       setFormData({
         title: '',
@@ -335,6 +398,48 @@ export default function Admin() {
           {submitting ? t('admin.form.submitting') : t('admin.form.submit')}
         </button>
       </form>
+
+      {/* Manage Artworks Section */}
+      <div className="mt-16">
+        <h2 className="text-2xl font-serif text-stone-900 mb-8">{t('admin.manage.title')}</h2>
+        
+        {loadingPaintings ? (
+          <div className="flex justify-center py-12">
+            <div className="w-8 h-8 border-4 border-stone-200 border-t-stone-800 rounded-full animate-spin"></div>
+          </div>
+        ) : paintings.length === 0 ? (
+          <p className="text-stone-500 italic">{t('admin.manage.empty')}</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paintings.map((painting) => (
+              <div key={painting.id} className="bg-white border border-stone-200 overflow-hidden flex flex-col">
+                <div className="aspect-square relative overflow-hidden bg-stone-100">
+                  <img 
+                    src={painting.imageURL} 
+                    alt={painting.title} 
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                <div className="p-4 flex flex-col flex-grow">
+                  <h3 className="font-serif text-lg text-stone-900 mb-1">{painting.title}</h3>
+                  <p className="text-sm text-stone-500 mb-4">{painting.width} × {painting.height} cm</p>
+                  
+                  <div className="mt-auto pt-4 border-t border-stone-100 flex justify-end">
+                    <button
+                      onClick={() => painting.id && handleDelete(painting.id, painting.imageURL)}
+                      className="flex items-center text-red-600 hover:text-red-800 transition-colors text-sm font-medium"
+                    >
+                      <Trash2 size={16} className="mr-2" />
+                      {t('admin.manage.delete')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 }
