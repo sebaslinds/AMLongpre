@@ -17,7 +17,7 @@ export default function PaintingDetail() {
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const formRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -222,7 +222,9 @@ export default function PaintingDetail() {
 
           <div className="prose prose-stone mb-12">
             <h3 className="text-sm uppercase tracking-widest text-stone-400 mb-4 font-normal">{t('detail.about')}</h3>
-            <p className="text-stone-600 leading-relaxed whitespace-pre-line">{painting.description}</p>
+            <p className="text-stone-600 leading-relaxed whitespace-pre-line">
+              {language === 'en' && painting.description_en ? painting.description_en : painting.description}
+            </p>
           </div>
 
           {painting.status === 'disponible' && !showForm && !submitSuccess && (

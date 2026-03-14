@@ -22,6 +22,7 @@ export default function Admin() {
     technique: '',
     year: new Date().getFullYear().toString(),
     description: '',
+    description_en: '',
     price: '',
     status: 'disponible' as 'disponible' | 'réservé',
   });
@@ -164,6 +165,7 @@ export default function Admin() {
             technique: formData.technique,
             year: formData.year,
             description: formData.description,
+            description_en: formData.description_en || null,
             price: formData.price ? Number(formData.price) : null,
             status: formData.status,
             createdAt: new Date().toISOString(),
@@ -183,6 +185,7 @@ export default function Admin() {
         technique: '',
         year: new Date().getFullYear().toString(),
         description: '',
+        description_en: '',
         price: '',
         status: 'disponible',
       });
@@ -385,6 +388,17 @@ export default function Admin() {
             value={formData.description}
             onChange={handleFormChange}
             required
+            rows={4}
+            className="w-full bg-transparent border border-stone-300 p-4 focus:outline-none focus:border-stone-900 transition-colors resize-none"
+          ></textarea>
+        </div>
+
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-stone-500 mb-2">{t('admin.form.description_en') || 'Description (English)'}</label>
+          <textarea
+            name="description_en"
+            value={formData.description_en}
+            onChange={handleFormChange}
             rows={4}
             className="w-full bg-transparent border border-stone-300 p-4 focus:outline-none focus:border-stone-900 transition-colors resize-none"
           ></textarea>

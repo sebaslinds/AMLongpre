@@ -7,6 +7,7 @@ export interface Painting {
   technique: string;
   year: string;
   description: string;
+  description_en?: string;
   price?: number;
   status: 'disponible' | 'réservé';
   createdAt: string; // Supabase timestamp
