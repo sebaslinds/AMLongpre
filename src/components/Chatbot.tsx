@@ -153,11 +153,18 @@ export default function Chatbot() {
       };
       
       setMessages(prev => [...prev, botMessage]);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating response:", error);
+      
+      let errorText = t('chat.error.network');
+      const errorString = String(error);
+      if (error?.message?.includes('429') || error?.status === 429 || error?.message?.includes('quota') || errorString.includes('429') || errorString.includes('quota')) {
+        errorText = t('chat.error.quota');
+      }
+
       const errorMessage: Message = { 
         id: (Date.now() + 1).toString(), 
-        text: t('chat.error.network'), 
+        text: errorText, 
         sender: 'bot' 
       };
       setMessages(prev => [...prev, errorMessage]);

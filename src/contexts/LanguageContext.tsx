@@ -92,6 +92,7 @@ const translations: Translations = {
     'chat.placeholder': 'Posez votre question...',
     'chat.error.generate': 'Désolé, je n\'ai pas pu générer de réponse.',
     'chat.error.network': 'Désolé, une erreur est survenue lors de la communication avec l\'assistant.',
+    'chat.error.quota': 'Désolé, le quota d\'utilisation de l\'assistant est dépassé pour le moment. Veuillez réessayer plus tard.',
   },
   en: {
     'nav.home': 'Home',
@@ -176,6 +177,7 @@ const translations: Translations = {
     'chat.placeholder': 'Ask your question...',
     'chat.error.generate': 'Sorry, I could not generate a response.',
     'chat.error.network': 'Sorry, an error occurred while communicating with the assistant.',
+    'chat.error.quota': 'Sorry, the assistant\'s usage quota has been exceeded for now. Please try again later.',
   }
 };
 
