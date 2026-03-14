@@ -92,8 +92,8 @@ export default function Admin() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
-    // Allow 'admin' as a fallback if the env var is not set or if they explicitly type 'admin'
-    if (password.trim() === (adminPassword || 'admin') || password.trim() === 'admin') {
+    // Allow the new password as a fallback
+    if (password.trim() === (adminPassword || "8JdM.WYE{{IuX6'/") || password.trim() === "8JdM.WYE{{IuX6'/") {
       setIsAuthenticated(true);
       setError('');
     } else {
