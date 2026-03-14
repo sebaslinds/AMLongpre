@@ -57,7 +57,7 @@ export default function Home() {
           >
             <Link
               to="/gallery"
-              className="inline-block px-8 py-4 bg-stone-50 text-stone-900 uppercase tracking-widest text-sm font-medium hover:bg-stone-200 transition-colors shadow-lg"
+              className="inline-block px-8 py-4 bg-stone-50 text-stone-900 uppercase tracking-widest text-sm font-medium hover:bg-stone-200 transition-colors shadow-lg rounded-full"
             >
               {t('home.hero.cta')}
             </Link>
