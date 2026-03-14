@@ -22,6 +22,8 @@ export default function PaintingDetail() {
   const formRef = useRef<HTMLDivElement>(null);
   
   const [translatedDescription, setTranslatedDescription] = useState<string | null>(null);
+  const [translatedTechnique, setTranslatedTechnique] = useState<string | null>(null);
+  const [translatedYear, setTranslatedYear] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
@@ -51,6 +53,8 @@ export default function PaintingDetail() {
       setSubmitSuccess(false);
       setSubmitError('');
       setTranslatedDescription(null);
+      setTranslatedTechnique(null);
+      setTranslatedYear(null);
       
       try {
         const { data, error } = await supabase
@@ -77,34 +81,50 @@ export default function PaintingDetail() {
   }, [id]);
 
   useEffect(() => {
-    async function translateDescription() {
-      if (
-        language === 'en' &&
-        painting &&
-        painting.description &&
-        !painting.description_en &&
-        !translatedDescription &&
-        !isTranslating
-      ) {
-        setIsTranslating(true);
-        try {
-          const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-          const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: `Translate the following artwork description from French to English. Only return the translated text, nothing else:\n\n${painting.description}`,
-          });
-          if (response.text) {
-            setTranslatedDescription(response.text.trim());
+    async function translateFields() {
+      if (language === 'en' && painting && !isTranslating) {
+        const needsDescription = painting.description && !painting.description_en && !translatedDescription;
+        const needsTechnique = painting.technique && !translatedTechnique;
+        const needsYear = painting.year && !translatedYear;
+
+        if (needsDescription || needsTechnique || needsYear) {
+          setIsTranslating(true);
+          try {
+            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+            
+            if (needsDescription) {
+              const response = await ai.models.generateContent({
+                model: 'gemini-3-flash-preview',
+                contents: `Translate the following artwork description from French to English. Only return the translated text, nothing else:\n\n${painting.description}`,
+              });
+              if (response.text) setTranslatedDescription(response.text.trim());
+            }
+
+            if (needsTechnique) {
+              const response = await ai.models.generateContent({
+                model: 'gemini-3-flash-preview',
+                contents: `Translate the following artwork technique from French to English. Only return the translated text, nothing else:\n\n${painting.technique}`,
+              });
+              if (response.text) setTranslatedTechnique(response.text.trim());
+            }
+
+            if (needsYear) {
+              const response = await ai.models.generateContent({
+                model: 'gemini-3-flash-preview',
+                contents: `Translate the following artwork year/location from French to English. Only return the translated text, nothing else:\n\n${painting.year}`,
+              });
+              if (response.text) setTranslatedYear(response.text.trim());
+            }
+          } catch (error) {
+            console.error('Translation error:', error);
+          } finally {
+            setIsTranslating(false);
           }
-        } catch (error) {
-          console.error('Translation error:', error);
-        } finally {
-          setIsTranslating(false);
         }
       }
     }
-    translateDescription();
-  }, [language, painting, translatedDescription, isTranslating]);
+    translateFields();
+  }, [language, painting, translatedDescription, translatedTechnique, translatedYear, isTranslating]);
 
   const handleReserveClick = () => {
     setShowForm(true);
@@ -241,11 +261,19 @@ export default function PaintingDetail() {
             </p>
             <p className="flex justify-between">
               <span className="uppercase text-xs tracking-widest text-stone-400">{t('detail.technique')}</span>
-              <span className="font-medium">{painting.technique}</span>
+              <span className="font-medium">
+                {language === 'en' 
+                  ? (translatedTechnique || (isTranslating ? 'Translating...' : painting.technique))
+                  : painting.technique}
+              </span>
             </p>
             <p className="flex justify-between">
               <span className="uppercase text-xs tracking-widest text-stone-400">{t('detail.year')}</span>
-              <span className="font-medium">{painting.year}</span>
+              <span className="font-medium">
+                {language === 'en' 
+                  ? (translatedYear || (isTranslating ? 'Translating...' : painting.year))
+                  : painting.year}
+              </span>
             </p>
             {painting.price && painting.status === 'disponible' && (
               <p className="flex justify-between items-center mt-6 pt-6 border-t border-stone-100">
