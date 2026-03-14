@@ -1,10 +1,48 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { useLanguage } from '../contexts/LanguageContext';
+import { GoogleGenAI } from '@google/genai';
 
 export default function Home() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  
+  const [translatedSubtitle, setTranslatedSubtitle] = useState<string | null>(null);
+  const [translatedCta, setTranslatedCta] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  useEffect(() => {
+    async function translateContent() {
+      if (language === 'en' && !isTranslating && !translatedSubtitle && !translatedCta) {
+        setIsTranslating(true);
+        try {
+          const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+          
+          const subtitleResponse = await ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: `Translate the following text from French to English. Only return the translated text, nothing else:\n\n${t('home.hero.subtitle')}`,
+          });
+          if (subtitleResponse.text) setTranslatedSubtitle(subtitleResponse.text.trim());
+
+          const ctaResponse = await ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: `Translate the following button text from French to English. Only return the translated text, nothing else:\n\n${t('home.hero.cta')}`,
+          });
+          if (ctaResponse.text) setTranslatedCta(ctaResponse.text.trim());
+          
+        } catch (error) {
+          console.error('Translation error:', error);
+        } finally {
+          setIsTranslating(false);
+        }
+      } else if (language === 'fr') {
+        setTranslatedSubtitle(null);
+        setTranslatedCta(null);
+      }
+    }
+    translateContent();
+  }, [language, t, translatedSubtitle, translatedCta, isTranslating]);
 
   return (
     <motion.div
@@ -16,14 +54,14 @@ export default function Home() {
     >
       <Helmet>
         <title>{t('home.hero.title')} | {t('footer.subtitle')}</title>
-        <meta name="description" content={t('home.hero.subtitle')} />
+        <meta name="description" content={language === 'en' && translatedSubtitle ? translatedSubtitle : t('home.hero.subtitle')} />
       </Helmet>
 
       <section className="relative w-full h-[80vh] flex items-center justify-center overflow-hidden">
         {/* Hero Image */}
         <div className="absolute inset-0 z-0">
           <img
-            src="/IMG_1266.jpg"
+            src="/IMG_1270.jpg"
             alt="Toile en vedette"
             className="w-full h-full object-cover object-center opacity-90"
           />
@@ -47,7 +85,9 @@ export default function Home() {
             transition={{ delay: 0.4, duration: 0.8 }}
             className="text-lg md:text-2xl text-stone-200 font-light mb-12 leading-relaxed"
           >
-            {t('home.hero.subtitle')}
+            {language === 'en' 
+              ? (translatedSubtitle || (isTranslating ? 'Translating...' : t('home.hero.subtitle')))
+              : t('home.hero.subtitle')}
           </motion.p>
           
           <motion.div
@@ -59,7 +99,9 @@ export default function Home() {
               to="/gallery"
               className="inline-block px-8 py-4 bg-stone-50 text-stone-900 uppercase tracking-widest text-sm font-medium hover:bg-stone-200 transition-colors shadow-lg rounded-full"
             >
-              {t('home.hero.cta')}
+              {language === 'en'
+                ? (translatedCta || (isTranslating ? 'Translating...' : t('home.hero.cta')))
+                : t('home.hero.cta')}
             </Link>
           </motion.div>
         </div>

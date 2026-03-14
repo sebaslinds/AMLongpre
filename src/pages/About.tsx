@@ -29,7 +29,7 @@ export default function About() {
         >
           <div className="aspect-[3/4] overflow-hidden bg-stone-200 shadow-xl">
             <img
-              src="https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=1000&auto=format&fit=crop"
+              src="/IMG_1269.jpg"
               alt="Portrait de l'artiste"
               className="w-full h-full object-cover grayscale opacity-90 hover:grayscale-0 transition-all duration-1000"
               referrerPolicy="no-referrer"
