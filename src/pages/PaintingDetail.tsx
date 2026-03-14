@@ -5,6 +5,7 @@ import { Helmet } from 'react-helmet-async';
 import { supabase } from '../supabase';
 import { Painting } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { GoogleGenAI } from '@google/genai';
 
 export default function PaintingDetail() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +20,9 @@ export default function PaintingDetail() {
   const [submitError, setSubmitError] = useState('');
   const { t, language } = useLanguage();
   const formRef = useRef<HTMLDivElement>(null);
+  
+  const [translatedDescription, setTranslatedDescription] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
     // Check if we should auto-open the form
@@ -46,6 +50,7 @@ export default function PaintingDetail() {
       setLoading(true);
       setSubmitSuccess(false);
       setSubmitError('');
+      setTranslatedDescription(null);
       
       try {
         const { data, error } = await supabase
@@ -70,6 +75,36 @@ export default function PaintingDetail() {
 
     fetchPainting();
   }, [id]);
+
+  useEffect(() => {
+    async function translateDescription() {
+      if (
+        language === 'en' &&
+        painting &&
+        painting.description &&
+        !painting.description_en &&
+        !translatedDescription &&
+        !isTranslating
+      ) {
+        setIsTranslating(true);
+        try {
+          const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+          const response = await ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: `Translate the following artwork description from French to English. Only return the translated text, nothing else:\n\n${painting.description}`,
+          });
+          if (response.text) {
+            setTranslatedDescription(response.text.trim());
+          }
+        } catch (error) {
+          console.error('Translation error:', error);
+        } finally {
+          setIsTranslating(false);
+        }
+      }
+    }
+    translateDescription();
+  }, [language, painting, translatedDescription, isTranslating]);
 
   const handleReserveClick = () => {
     setShowForm(true);
@@ -223,7 +258,9 @@ export default function PaintingDetail() {
           <div className="prose prose-stone mb-12">
             <h3 className="text-sm uppercase tracking-widest text-stone-400 mb-4 font-normal">{t('detail.about')}</h3>
             <p className="text-stone-600 leading-relaxed whitespace-pre-line">
-              {language === 'en' && painting.description_en ? painting.description_en : painting.description}
+              {language === 'en' 
+                ? (painting.description_en || translatedDescription || (isTranslating ? 'Translating...' : painting.description))
+                : painting.description}
             </p>
           </div>
 
