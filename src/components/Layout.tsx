@@ -29,11 +29,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 font-sans selection:bg-stone-200 flex flex-col">
       <header className="fixed top-0 w-full z-50 bg-stone-50/80 backdrop-blur-md border-b border-stone-200/50">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <Link to="/" className="text-xl font-serif tracking-widest uppercase">
-            A.M Longpré
-          </Link>
-
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-end">
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
             <button
