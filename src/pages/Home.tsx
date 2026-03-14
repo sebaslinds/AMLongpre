@@ -23,10 +23,9 @@ export default function Home() {
         {/* Hero Image */}
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1541961017774-22349e4a1262?q=80&w=2000&auto=format&fit=crop"
+            src="/IMG_1266.jpg"
             alt="Toile en vedette"
             className="w-full h-full object-cover object-center opacity-90"
-            referrerPolicy="no-referrer"
           />
           <div className="absolute inset-0 bg-stone-900/30 mix-blend-multiply" />
         </div>
