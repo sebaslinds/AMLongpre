@@ -78,7 +78,7 @@ export default function Chatbot() {
         };
 
         chatRef.current = ai.chats.create({
-          model: "gemini-3.1-pro-preview",
+          model: "gemini-2.5-flash",
           config: {
             systemInstruction: systemInstruction,
             tools: [{ functionDeclarations: [reserveArtworkFunctionDeclaration] }],
